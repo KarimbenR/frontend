@@ -1307,7 +1307,7 @@ export default function Statistics() {
             pointHoverBorderColor: 'rgba(54, 162, 235, 1)',
             borderWidth: 1.5,
             fill: true,
-            pointRadius: 5,
+            pointRadius: 2,
             pointHoverRadius: 7
           },
           {
@@ -1321,7 +1321,7 @@ export default function Statistics() {
             pointHoverBorderColor: 'rgba(255, 99, 132, 1)',
             borderWidth: 1.5,
             fill: true,
-            pointRadius: 5,
+            pointRadius: 2,
             pointHoverRadius: 7
           }
         ]
@@ -1378,7 +1378,7 @@ export default function Statistics() {
       scales: {
         r: {
           min: 0,
-          max: 60,
+          max: 35,
           beginAtZero: true,
           backgroundColor: 'rgba(245, 245, 245, 0.5)',
           angleLines: {
@@ -1415,10 +1415,11 @@ export default function Statistics() {
       elements: {
         line: {
           tension: 0.35,
-          borderJoinStyle: 'round'
+          borderJoinStyle: 'round',
+          borderWidth: 1.5
         },
         point: {
-          radius: 5,
+          radius: 2,
           hoverRadius: 7,
           borderWidth: 2,
           hitRadius: 10
