@@ -1280,12 +1280,12 @@ export default function Statistics() {
         </div>
 
         <Card className="p-6 mt-8 border-l-4 border-blue-500 bg-gradient-to-r from-blue-50 to-white">
-          <Title className="mb-2 text-center">Guide d'Interprétation</Title>
+          <Title className="mb-2 text-center">Guide d&apos;Interprétation</Title>
           <div className="prose mx-auto max-w-3xl">
             <ul className="list-disc pl-6 space-y-2">
               <li><span className="font-semibold">Perturbation psychosomatique</span>: Manifestations physiques résultant du stress psychologique.</li>
               <li><span className="font-semibold">Perturbation cognitive</span>: Difficultés liées à la concentration, la mémoire et la prise de décision.</li>
-              <li><span className="font-semibold">Perturbation émotionnelle</span>: Changements dans la régulation des émotions et l'humeur.</li>
+              <li><span className="font-semibold">Perturbation émotionnelle</span>: Changements dans la régulation des émotions et l&apos;humeur.</li>
               <li><span className="font-semibold">Souvenirs traumatisants</span>: Reviviscences et pensées intrusives liées aux événements traumatiques.</li>
             </ul>
             <p className="mt-4 text-sm text-gray-600">
@@ -1594,12 +1594,12 @@ export default function Statistics() {
         </div>
 
         <Card className="p-6 mt-8 border-l-4 border-blue-500 bg-gradient-to-r from-blue-50 to-white">
-          <Title className="mb-2 text-center">Guide d'Interprétation</Title>
+          <Title className="mb-2 text-center">Guide d&apos;Interprétation</Title>
           <div className="prose mx-auto max-w-3xl">
             <ul className="list-disc pl-6 space-y-2">
               <li><span className="font-semibold">Perturbation psychosomatique</span>: Manifestations physiques résultant du stress psychologique.</li>
               <li><span className="font-semibold">Perturbation cognitive</span>: Difficultés liées à la concentration, la mémoire et la prise de décision.</li>
-              <li><span className="font-semibold">Perturbation émotionnelle</span>: Changements dans la régulation des émotions et l'humeur.</li>
+              <li><span className="font-semibold">Perturbation émotionnelle</span>: Changements dans la régulation des émotions et l&apos;humeur.</li>
               <li><span className="font-semibold">Souvenirs traumatisants</span>: Reviviscences et pensées intrusives liées aux événements traumatiques.</li>
             </ul>
             <p className="mt-4 text-sm text-gray-600">
