@@ -130,6 +130,12 @@ export default function Statistics() {
           // Use server action which handles CORS issues
           const data = await fetchCustomStats(session.user.accessToken);
           setCustomData(data);
+          
+          // Also fetch global data if it's not already loaded
+          if (!globalData) {
+            const globalResult = await fetchGlobalStats(session.user.accessToken);
+            setGlobalData(globalResult);
+          }
         } catch (error) {
           toast.error('Échec du chargement des données personnalisées');
           console.error(error);
@@ -140,7 +146,7 @@ export default function Statistics() {
     };
     
     fetchCustomData();
-  }, [activeTab, customData, session]);
+  }, [activeTab, customData, globalData, session]);
 
   // Fetch both global and custom data when the "Radar" tab is selected
   useEffect(() => {
@@ -651,10 +657,10 @@ export default function Statistics() {
     // Map score labels to meaningful text
     const scoreLabels = {
       "score 31-35": "Moyen",
-      "score > 41": "Trés Fort",
+      "score > 41": "Trés Élevé",
       "score 27-30": "Faible",
       "score 0-26": "Trés Faible",
-      "score 36-40": "Fort",
+      "score 36-40": "Élevé",
     };
 
     // Function to format score label
@@ -787,11 +793,11 @@ export default function Statistics() {
               <div className="text-sm text-gray-600">score 31-35</div>
             </div>
             <div className="bg-blue-100 p-3 rounded-md shadow">
-              <div className="font-bold">Fort</div>
+              <div className="font-bold">Élevé</div>
               <div className="text-sm text-gray-600">score 36-40</div>
             </div>
             <div className="bg-green-100 p-3 rounded-md shadow">
-              <div className="font-bold">Trés Fort</div>
+              <div className="font-bold">Trés Élevé</div>
               <div className="text-sm text-gray-600">score {`>`} 41</div>
             </div>
           </div>
@@ -1008,10 +1014,10 @@ export default function Statistics() {
     // Map score labels to meaningful text (same as in GlobalSection)
     const scoreLabels = {
       "score 31-35": "Moyen",
-      "score > 41": "Trés Fort",
+      "score > 41": "Trés Élevé",
       "score 27-30": "Faible",
       "score 0-26": "Trés Faible",
-      "score 36-40": "Fort",
+      "score 36-40": "Élevé",
     };
 
     // Map group IDs to meaningful titles
@@ -1040,8 +1046,8 @@ export default function Statistics() {
       return [...scores].sort((a, b) => order[a.score as keyof typeof order] - order[b.score as keyof typeof order]);
     };
 
-    // Prepare data for each group's radar chart
-    const prepareRadarData = (groupId: string) => {
+    // Function to prepare chart data for each group
+    const prepareColumnChartData = (groupId: string) => {
       const groupData = customData[groupId];
       
       if (!groupData) return {
@@ -1049,163 +1055,58 @@ export default function Statistics() {
         datasets: []
       };
 
-      // Use all score categories in a consistent order
-      const sortedScoreCategories = [
-        "score 0-26",
-        "score 27-30", 
-        "score 31-35",
-        "score 36-40",
-        "score > 41"
-      ];
-      
-      // Map group scores for easier access
-      const groupScoresMap = new Map(
-        groupData.map((item: any) => [item.score, item.value])
-      );
-
-      // Create formatted labels
-      const formattedLabels = sortedScoreCategories.map(score => formatScoreLabel(score));
+      // Sort the scores in order
+      const sortedScores = sortScores(groupData);
       
       return {
-        labels: formattedLabels,
+        labels: sortedScores.map(item => formatScoreLabel(item.score)),
         datasets: [
           {
-            label: 'Global',
-            data: sortedScoreCategories.map(score => globalData.global.find((item: any) => item.score === score)?.value || 0),
-            backgroundColor: 'rgba(54, 162, 235, 0.3)',
-            borderColor: 'rgba(54, 162, 235, 1)',
-            pointBackgroundColor: 'rgba(54, 162, 235, 1)',
-            pointBorderColor: '#fff',
-            pointHoverBackgroundColor: '#fff',
-            pointHoverBorderColor: 'rgba(54, 162, 235, 1)',
-            borderWidth: 1.5,
-            fill: true,
-            pointRadius: 5,
-            pointHoverRadius: 7
-          },
-          {
             label: groupTitles[groupId as keyof typeof groupTitles] || groupId,
-            data: sortedScoreCategories.map(score => groupScoresMap.get(score) || 0),
-            backgroundColor: 'rgba(255, 99, 132, 0.3)',
-            borderColor: 'rgba(255, 99, 132, 1)',
-            pointBackgroundColor: 'rgba(255, 99, 132, 1)',
-            pointBorderColor: '#fff',
-            pointHoverBackgroundColor: '#fff',
-            pointHoverBorderColor: 'rgba(255, 99, 132, 1)',
-            borderWidth: 1.5,
-            fill: true,
-            pointRadius: 5,
-            pointHoverRadius: 7
+            data: sortedScores.map(item => item.value),
+            backgroundColor: groupId === 'group1' ? 'rgba(54, 162, 235, 0.8)' 
+                           : groupId === 'group2' ? 'rgba(255, 99, 132, 0.8)'
+                           : groupId === 'group3' ? 'rgba(75, 192, 192, 0.8)'
+                           : 'rgba(255, 206, 86, 0.8)',
+            borderColor: groupId === 'group1' ? 'rgba(54, 162, 235, 1)' 
+                        : groupId === 'group2' ? 'rgba(255, 99, 132, 1)'
+                        : groupId === 'group3' ? 'rgba(75, 192, 192, 1)'
+                        : 'rgba(255, 206, 86, 1)',
+            borderWidth: 1
           }
         ]
       };
     };
 
-    // Prepare radar chart data for all groups
-    const group1RadarData = prepareRadarData('group1');
-    const group2RadarData = prepareRadarData('group2');
-    const group3RadarData = prepareRadarData('group3');
-    const group4RadarData = prepareRadarData('group4');
-
-    // Common options for radar charts with proper typing
-    const radarOptions = {
-      // Cast as 'any' to avoid TypeScript errors
-      plugins: {
-        legend: {
-          display: true,
-          position: 'top',
-          labels: {
-            boxWidth: 15,
-            padding: 15,
-            usePointStyle: true,
-            pointStyleWidth: 10,
-            font: {
-              size: 12,
-              family: "'Helvetica Neue', 'Helvetica', 'Arial', sans-serif"
-            }
-          }
-        },
-        tooltip: {
-          backgroundColor: 'rgba(0, 0, 0, 0.8)',
-          titleFont: {
-            size: 14,
-            weight: 'bold'
-          },
-          bodyFont: {
-            size: 13
-          },
-          padding: 10,
-          cornerRadius: 6,
-          displayColors: true,
-          usePointStyle: true,
-          callbacks: {
-            label: (context: any) => {
-              return `${context.dataset.label}: ${context.raw}%`;
-            }
-          }
-        },
-        datalabels: {
-          display: false
-        }
-      },
+    // Common options for bar charts
+    const columnChartOptions = {
       scales: {
-        r: {
-          min: 0,
-          max: 60,
+        y: {
           beginAtZero: true,
-          backgroundColor: 'rgba(245, 245, 245, 0.5)',
-          angleLines: {
+          title: {
             display: true,
-            color: 'rgba(120, 120, 120, 0.2)',
-            lineWidth: 1
-          },
-          grid: {
-            color: 'rgba(120, 120, 120, 0.2)',
-            circular: true
-          },
-          pointLabels: {
-            font: {
-              size: 14,
-              weight: 'bold',
-              family: "'Helvetica Neue', 'Helvetica', 'Arial', sans-serif"
-            },
-            color: '#333',
-            padding: 20
+            text: 'Pourcentage'
           },
           ticks: {
-            backdropColor: 'transparent',
-            z: 1,
-            stepSize: 10,
-            font: {
-              size: 10
-            },
-            backdropPadding: 3,
-            color: '#666',
-            callback: (value: number) => value + '%'
+            callback: (value: number) => `${value}%`
           }
         }
       },
-      elements: {
-        line: {
-          tension: 0.35,
-          borderJoinStyle: 'round'
+      plugins: {
+        legend: {
+          display: false
         },
-        point: {
-          radius: 5,
-          hoverRadius: 7,
-          borderWidth: 2,
-          hitRadius: 10
+        datalabels: {
+          anchor: 'end',
+          align: 'top',
+          formatter: (value: number) => `${value}%`,
+          font: {
+            weight: 'bold'
+          }
         }
       },
-      responsive: true,
       maintainAspectRatio: false,
-      layout: {
-        padding: 15
-      },
-      animation: {
-        duration: 1500,
-        easing: 'easeOutQuart'
-      }
+      responsive: true
     } as any;
 
     return (
@@ -1227,54 +1128,66 @@ export default function Statistics() {
               <div className="text-sm text-gray-600">score 31-35</div>
             </div>
             <div className="bg-gradient-to-br from-blue-100 to-blue-50 p-3 rounded-md shadow-md">
-              <div className="font-bold">Fort</div>
+              <div className="font-bold">Élevé</div>
               <div className="text-sm text-gray-600">score 36-40</div>
             </div>
             <div className="bg-gradient-to-br from-green-100 to-green-50 p-3 rounded-md shadow-md">
-              <div className="font-bold">Trés Fort</div>
+              <div className="font-bold">Trés Élevé</div>
               <div className="text-sm text-gray-600">score {`>`} 41</div>
             </div>
           </div>
         </Card>
 
         <Card className="p-6 mb-6 border-l-4 border-blue-500 bg-gradient-to-r from-blue-50 to-white">
-          <Title className="mb-4 text-center">Comparaison des Scores par Catégorie</Title>
+          <Title className="mb-4 text-center">Scores par Catégorie de Perturbation</Title>
           <Text className="text-center text-gray-600 mb-6">
-            Les graphiques radar ci-dessous montrent la comparaison entre les scores globaux et 
-            les scores par catégorie de perturbation. Plus la valeur est élevée sur chaque axe, plus la prévalence est importante.
+            Les graphiques ci-dessous montrent la distribution des scores pour chaque catégorie de perturbation.
+            Les scores sont exprimés en pourcentage de la population étudiée.
           </Text>
         </Card>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Group 1 Radar - Perturbation psychosomatique */}
+          {/* Group 1 Chart - Perturbation psychosomatique */}
           <Card className="p-6 shadow-lg hover:shadow-xl transition-shadow bg-white border border-gray-100 rounded-lg overflow-hidden">
-            <Title className="mb-4 text-center border-b pb-3 text-black font-bold">Perturbation psychosomatique vs Global</Title>
-            <div className="h-[450px]">
-              <Radar data={group1RadarData} options={radarOptions} />
+            <Title className="mb-4 text-center border-b pb-3 text-black font-bold">Perturbation psychosomatique</Title>
+            <div className="h-80">
+              <Bar 
+                data={prepareColumnChartData('group1')} 
+                options={columnChartOptions} 
+              />
             </div>
           </Card>
 
-          {/* Group 2 Radar - Perturbation cognitive */}
+          {/* Group 2 Chart - Perturbation cognitive */}
           <Card className="p-6 shadow-lg hover:shadow-xl transition-shadow bg-white border border-gray-100 rounded-lg overflow-hidden">
-            <Title className="mb-4 text-center border-b pb-3 text-black font-bold">Perturbation cognitive vs Global</Title>
-            <div className="h-[450px]">
-              <Radar data={group2RadarData} options={radarOptions} />
+            <Title className="mb-4 text-center border-b pb-3 text-black font-bold">Perturbation cognitive</Title>
+            <div className="h-80">
+              <Bar 
+                data={prepareColumnChartData('group2')} 
+                options={columnChartOptions} 
+              />
             </div>
           </Card>
 
-          {/* Group 3 Radar - Perturbation émotionnelle */}
+          {/* Group 3 Chart - Perturbation émotionnelle */}
           <Card className="p-6 shadow-lg hover:shadow-xl transition-shadow bg-white border border-gray-100 rounded-lg overflow-hidden">
-            <Title className="mb-4 text-center border-b pb-3 text-black font-bold">Perturbation émotionnelle vs Global</Title>
-            <div className="h-[450px]">
-              <Radar data={group3RadarData} options={radarOptions} />
+            <Title className="mb-4 text-center border-b pb-3 text-black font-bold">Perturbation émotionnelle</Title>
+            <div className="h-80">
+              <Bar 
+                data={prepareColumnChartData('group3')} 
+                options={columnChartOptions} 
+              />
             </div>
           </Card>
 
-          {/* Group 4 Radar - Souvenirs traumatisants */}
+          {/* Group 4 Chart - Souvenirs traumatisants */}
           <Card className="p-6 shadow-lg hover:shadow-xl transition-shadow bg-white border border-gray-100 rounded-lg overflow-hidden">
-            <Title className="mb-4 text-center border-b pb-3 text-black font-bold">Souvenirs traumatisants vs Global</Title>
-            <div className="h-[450px]">
-              <Radar data={group4RadarData} options={radarOptions} />
+            <Title className="mb-4 text-center border-b pb-3 text-black font-bold">Souvenirs traumatisants</Title>
+            <div className="h-80">
+              <Bar 
+                data={prepareColumnChartData('group4')} 
+                options={columnChartOptions} 
+              />
             </div>
           </Card>
         </div>
@@ -1289,7 +1202,7 @@ export default function Statistics() {
               <li><span className="font-semibold">Souvenirs traumatisants</span>: Reviviscences et pensées intrusives liées aux événements traumatiques.</li>
             </ul>
             <p className="mt-4 text-sm text-gray-600">
-              Les écarts significatifs entre les scores globaux et les scores spécifiques peuvent indiquer des domaines nécessitant une attention particulière.
+              Une prévalence élevée dans une catégorie particulière peut indiquer un domaine nécessitant une attention particulière.
             </p>
           </div>
         </Card>
@@ -1317,10 +1230,10 @@ export default function Statistics() {
     // Map score labels to meaningful text (same as in other sections)
     const scoreLabels = {
       "score 31-35": "Moyen",
-      "score > 41": "Trés Fort",
+      "score > 41": "Trés Élevé",
       "score 27-30": "Faible",
       "score 0-26": "Trés Faible",
-      "score 36-40": "Fort",
+      "score 36-40": "Élevé",
     };
 
     // Map group IDs to meaningful titles
@@ -1541,11 +1454,11 @@ export default function Statistics() {
               <div className="text-sm text-gray-600">score 31-35</div>
             </div>
             <div className="bg-gradient-to-br from-blue-100 to-blue-50 p-3 rounded-md shadow-md">
-              <div className="font-bold">Fort</div>
+              <div className="font-bold">Élevé</div>
               <div className="text-sm text-gray-600">score 36-40</div>
             </div>
             <div className="bg-gradient-to-br from-green-100 to-green-50 p-3 rounded-md shadow-md">
-              <div className="font-bold">Trés Fort</div>
+              <div className="font-bold">Trés Élevé</div>
               <div className="text-sm text-gray-600">score {`>`} 41</div>
             </div>
           </div>
